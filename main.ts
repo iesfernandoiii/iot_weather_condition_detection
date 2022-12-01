@@ -2,10 +2,10 @@ let enviar_a_nube = true
 basic.showString("Hora")
 RTC_DS1307.DateTime(
 2022,
-11,
-30,
-20,
-6,
+12,
+1,
+15,
+34,
 0
 )
 OLED.init(128, 64)
