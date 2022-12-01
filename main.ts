@@ -1,63 +1,52 @@
-input.onButtonPressed(Button.A, function () {
-    RTC_DS1307.setTime(RTC_DS1307.TimeType.MINUTE, RTC_DS1307.getTime(RTC_DS1307.TimeType.MINUTE) + 1)
-})
-input.onButtonPressed(Button.B, function () {
-    RTC_DS1307.setTime(RTC_DS1307.TimeType.MINUTE, RTC_DS1307.getTime(RTC_DS1307.TimeType.MINUTE) - 1)
-})
-function mostrar_datos_display () {
-    OLED.clear()
-    OLED.writeString("Luz:")
-    OLED.writeNum(Environment.ReadLightIntensity(AnalogPin.P1))
-    OLED.newLine()
-    OLED.writeString("Temperatura (Cº):")
-    OLED.writeNum(Environment.octopus_BME280(Environment.BME280_state.BME280_temperature_C))
-    OLED.newLine()
-    OLED.writeString("Humedad:")
-    OLED.writeNum(Environment.octopus_BME280(Environment.BME280_state.BME280_humidity))
-}
-basic.showString("Poniendo en hora")
+let enviar_a_nube = true
+basic.showString("Hora")
 RTC_DS1307.DateTime(
 2022,
 11,
 30,
-19,
-15,
+20,
+6,
 0
 )
-basic.showString("Hora fijada")
-basic.showString("" + RTC_DS1307.getTime(RTC_DS1307.TimeType.HOUR) + ":" + RTC_DS1307.getTime(RTC_DS1307.TimeType.MINUTE))
-basic.pause(500)
-basic.showString("Iniciando OLED")
 OLED.init(128, 64)
 OLED.clear()
-OLED.drawLoading(25)
-basic.showString("OLED iniciado")
-basic.pause(200)
-basic.showString("Iniciando Wifi")
+OLED.writeStringNewLine("OLED iniciado")
+basic.pause(1000)
+OLED.writeStringNewLine("" + RTC_DS1307.getTime(RTC_DS1307.TimeType.HOUR) + ":" + RTC_DS1307.getTime(RTC_DS1307.TimeType.MINUTE))
+basic.pause(1000)
+OLED.writeStringNewLine("Iniciando Wifi")
 ESP8266_IoT.initWIFI(SerialPin.P8, SerialPin.P12, BaudRate.BaudRate115200)
 ESP8266_IoT.connectWifi("LBWifi", "LosBanyos")
-basic.pause(500)
+OLED.clear()
 if (ESP8266_IoT.wifiState(true)) {
-    basic.showString("Wifi conectado")
-    OLED.clear()
-    OLED.drawLoading(50)
+    OLED.writeStringNewLine("Wifi OK")
 } else {
-    basic.showString("Wifi NO")
+    OLED.writeStringNewLine("Wifi NO conectado")
 }
-basic.pause(500)
+basic.pause(1000)
 basic.forever(function () {
-    basic.showString("" + RTC_DS1307.getTime(RTC_DS1307.TimeType.HOUR) + ":" + RTC_DS1307.getTime(RTC_DS1307.TimeType.MINUTE))
-    mostrar_datos_display()
+    OLED.clear()
+    OLED.writeStringNewLine("" + RTC_DS1307.getTime(RTC_DS1307.TimeType.HOUR) + ":" + RTC_DS1307.getTime(RTC_DS1307.TimeType.MINUTE))
     if (ESP8266_IoT.wifiState(true)) {
-        ESP8266_IoT.connectThingSpeak()
-        if (ESP8266_IoT.thingSpeakState(true)) {
+        OLED.writeString("Luz:")
+        OLED.writeNumNewLine(Environment.ReadLightIntensity(AnalogPin.P1))
+        OLED.writeString("Temperatura (Cº):")
+        OLED.writeNumNewLine(Environment.octopus_BME280(Environment.BME280_state.BME280_temperature_C))
+        OLED.writeString("Humedad:")
+        OLED.writeNumNewLine(Environment.octopus_BME280(Environment.BME280_state.BME280_humidity))
+        if (enviar_a_nube) {
+            ESP8266_IoT.connectThingSpeak()
             ESP8266_IoT.setData(
             "F0GCA2MBNTD7YHQ3",
             Environment.octopus_BME280(Environment.BME280_state.BME280_temperature_C),
             Environment.octopus_BME280(Environment.BME280_state.BME280_humidity),
             Environment.ReadLightIntensity(AnalogPin.P1)
             )
+            ESP8266_IoT.uploadData()
         }
+    } else {
+        OLED.writeStringNewLine("No conectado a la Wifi")
+        music.playSoundEffect(music.builtinSoundEffect(soundExpression.sad), SoundExpressionPlayMode.UntilDone)
     }
     basic.pause(60000)
 })
